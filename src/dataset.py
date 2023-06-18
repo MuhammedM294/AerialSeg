@@ -77,3 +77,16 @@ def train_augmentation():
                             border_mode=cv2.BORDER_REFLECT),
         
     ])
+
+def transform():
+    """
+    Returns a transformation function that normalizes an input image.
+
+    Returns:
+        torchvision.transforms.Normalize: An instance of the `torchvision.transforms.Normalize` class.
+
+    Example:
+        transform_func = transform()
+        transformed_image = transform_func(image)
+    """
+    return transforms.Normalize(mean=[0.485,0.456, 0.406],std=[0.229, 0.224, 0.225])
