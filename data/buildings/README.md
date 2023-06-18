@@ -1,0 +1,1 @@
+THe folder containd the JPG images of Massachusetts Roads Dataset. The images are not directly commited to GitHub. The datasets can be downloaded from here (https://www.cs.toronto.edu/~vmnih/data/)
