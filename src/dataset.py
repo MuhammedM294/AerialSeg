@@ -3,10 +3,13 @@ from torchvision import transforms
 import pandas as pd
 import numpy as np
 import cv2
+import os
 import torch
 import albumentations as A
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 image_size = 512
+df_path = 'data/roads/metadata.csv'
+parent_dir = os.path.split(df_path)[0]
 
 class SegmentationDataset(Dataset[any]):
     """
@@ -69,13 +72,13 @@ class SegmentationDataset(Dataset[any]):
         return image.to(device) , mask.to(device)
     
     def get_image(self, idx:int):
-        image_path = 'data/roads/' + self.df.iloc[idx, 4]
+        image_path = parent_dir+ self.df.iloc[idx, 4]
         image = cv2.imread(image_path)[:,:,::-1]
         image = cv2.resize(image/255., (image_size, image_size))
         return image
     
     def get_mask(self, idx:int):
-        mask_path = 'data/roads/' + self.df.iloc[idx, 5]
+        mask_path = parent_dir + self.df.iloc[idx, 5]
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         mask = cv2.resize(mask/255, (image_size, image_size))
         mask = np.expand_dims(mask, axis=-1)
