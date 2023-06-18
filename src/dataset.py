@@ -8,7 +8,7 @@ import albumentations as A
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 image_size = 512
 
-class RoadDataset(Dataset[any]):
+class SegmentationDataset(Dataset[any]):
 
     def __init__(self, df:pd.DataFrame, train:bool, transform:bool , augment:bool, augementation):
         self.train = train
