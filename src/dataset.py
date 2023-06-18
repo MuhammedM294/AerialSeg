@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import pandas as pd
 import numpy as np
@@ -129,3 +129,29 @@ def transform():
         transformed_image = transform_func(image)
     """
     return transforms.Normalize(mean=[0.485,0.456, 0.406],std=[0.229, 0.224, 0.225])
+
+
+def create_dataloader(df:pd.DataFrame, train:bool, 
+                      transform:transforms.Normalize = None, augment:A.Compose = None, 
+                      batch_size:int = 32, shuffle:bool = True, drop_last:bool = True):
+    """
+    Creates a PyTorch dataloader for the segmentation dataset.
+
+    This function creates a PyTorch dataloader for the segmentation dataset using the provided DataFrame and dataset parameters.
+
+    Args:
+        df (pd.DataFrame): A Pandas DataFrame containing information about the images and masks paths.
+        train (bool): Specifies whether the dataset is for training (True) or testing (False).
+        transform (torchvision.transforms.Normalize, optional): A transformation to be applied to the image. Defaults to None.
+        augment (albumentations.Compose, optional): A composition of augmentations to be applied to both the image and mask. Defaults to None.
+        batch_size (int, optional): The batch size for the dataloader. Defaults to 32.
+        shuffle (bool, optional): Specifies whether to shuffle the data during training. Defaults to True.
+        drop_last (bool, optional): Specifies whether to drop the last incomplete batch if the dataset size is not divisible by the batch size. Defaults to True.
+   
+     Returns:
+        A PyTorch dataloader object for the segmentation task.
+    """
+    dataset = SegmentationDataset(df, train, transform, augment)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle , drop_last=drop_last)
+
+    return dataloader
