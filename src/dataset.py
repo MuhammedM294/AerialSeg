@@ -9,52 +9,91 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 image_size = 512
 
 class SegmentationDataset(Dataset[any]):
+    """
+    A PyTorch dataset class for segmentation task.
 
-    def __init__(self, df:pd.DataFrame, train:bool, transform:bool , augment:bool, augementation):
+    This class represents a dataset used for the segmentation task, where each sample consists of an image and its corresponding mask. 
+    It inherits from the PyTorch `Dataset` class.
+
+    Args:
+        df (pd.DataFrame): A Pandas DataFrame containing the image and label paths.
+        train (bool): Specifies whether the dataset is for training (True) or testing (False).
+        transform (torchvision.transforms.Normalize, optional): A transformation to be applied to the image. Defaults to None.
+        augment (albumentations.Compose, optional): A composition of augmentations to be applied to both the image and mask. Defaults to None.
+
+    Attributes:
+        train (bool): Indicates whether the dataset is for training or testing.
+        transform (torchvision.transforms.Normalize): The transformation applied to the image.
+        augment (albumentations.Compose): The composition of augmentations applied to the image and mask.
+        df (pd.DataFrame): The subset of the DataFrame that corresponds to the train or test split.
+
+    Methods:
+        __len__():
+            Returns the length of the dataset.
+
+        __getitem__(idx:int):
+            Retrieves the image and mask at the given index.
+
+        get_image(idx:int):
+            Read the image at the given index from the file.
+
+        get_mask(idx:int):
+            Read the mask at the given index from the file.
+
+        preprocess(image:np.array, mask:np.array):
+            Preprocesses the image and mask data.
+
+    Returns:
+        A PyTorch dataset object for the segmentation task.
+    """
+
+    def __init__(self, df:pd.DataFrame, train:bool, transform:transforms.Normalize = None, augment:A.Compose = None):
+     
         self.train = train
+        self.transform = transform
+        self.augment = augment
+
         if self.train:
             self.df = df[df['split'] == 'train']
         else:
             self.df = df[df['split'] == 'test']
-
-        self.transform = transforms.Normalize(mean=[0.485,0.456, 0.406],std=[0.229, 0.224, 0.225])
 
     def __len__(self):
         return len(self.df)
     
     def __getitem__(self, idx:int):
         image = self.get_image(idx)
-        label = self.get_label(idx)
+        mask = self.get_mask(idx)
+        image , mask  = self.preprocess(image, mask)
     
-        return image.to(device) , label.to(device)
+        return image.to(device) , mask.to(device)
     
     def get_image(self, idx:int):
-        self.idx = idx
-        image = self.preprocess_image(self.idx)
-        return image
-    
-    def get_label(self, idx:int):
-        self.idx = idx
-        label = self.preprocess_label(self.idx)
-        return label
-    
-    def preprocess_image(self, idx:int):
         image_path = '../data/roads/' + self.df.iloc[idx, 4]
         image = cv2.imread(image_path)[:,:,::-1]
-        image = cv2.resize(image, (image_size, image_size))
-        image = torch.tensor(image/255, dtype=torch.float32).permute(2,0,1)
+        image = cv2.resize(image/255., (image_size, image_size))
+        return image
+    
+    def get_mask(self, idx:int):
+        mask_path = '../data/roads/' + self.df.iloc[idx, 5]
+        mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+        mask = cv2.resize(mask/255, (image_size, image_size))
+        mask = np.expand_dims(mask, axis=-1)
+        return mask
+    
+    def preprocess(self, image:np.array, mask:np.array):
+        
+        if self.augment:
+            data = self.augment(image = image, mask = mask)
+            image = data['image']
+            mask = data['mask']
+        image = torch.tensor(image, dtype=torch.float32).permute(2,0,1)
+        mask = torch.tensor(mask, dtype=torch.float32).permute(2,0,1)
         if self.transform:
             image = self.transform(image)
         
-        return image
-    
-    def preprocess_label(self, idx:int):
-        label_path = '../data/roads/' + self.df.iloc[idx, 5]
-        label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)
-        label = cv2.resize(label, (image_size, image_size))
-        label = np.expand_dims(label, axis=-1)
-        label = torch.tensor(label/255, dtype=torch.float32)
-        return label
+        return image, mask
+
 
 def train_augmentation():
     """
