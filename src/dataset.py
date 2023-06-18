@@ -56,3 +56,24 @@ class SegmentationDataset(Dataset[any]):
         label = torch.tensor(label/255, dtype=torch.float32)
         return label
 
+def train_augmentation():
+    """
+    Creates an augmentation pipeline for training images.
+
+    Returns:
+        A.Compose: An instance of the `A.Compose` class representing the augmentation pipeline.
+
+    Example:
+        augmentation = train_augmentation()(image=image, mask=mask)
+        augmented_image = augmentation['image']
+        augmented_mask = augmentation['mask']
+    """
+    return  A.Compose([
+        A.Resize(image_size, image_size),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.RandomRotate90(p=0.5),
+        A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.2, rotate_limit=15, p=0.9,
+                            border_mode=cv2.BORDER_REFLECT),
+        
+    ])
