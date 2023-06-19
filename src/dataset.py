@@ -71,13 +71,13 @@ class SegmentationDataset(Dataset[any]):
         return image, mask
     
     def get_image(self, idx:int):
-        image_path = parent_dir+ self.df.iloc[idx, 4]
+        image_path = parent_dir+'/'+ self.df.iloc[idx, 4]
         image = cv2.imread(image_path)[:,:,::-1]
         image = cv2.resize(image/255., (IMAGE_SIZE, IMAGE_SIZE))
         return image
     
     def get_mask(self, idx:int):
-        mask_path = parent_dir + self.df.iloc[idx, 5]
+        mask_path = parent_dir +'/'+ self.df.iloc[idx, 5]
         mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
         mask = cv2.resize(mask/255, (IMAGE_SIZE, IMAGE_SIZE))
         mask = np.expand_dims(mask, axis=-1)
