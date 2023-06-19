@@ -6,7 +6,6 @@ import cv2
 import os
 import torch
 import albumentations as A
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 IMAGE_SIZE = 512
 df_path = 'data/roads/metadata.csv'
 parent_dir = os.path.split(df_path)[0]
@@ -69,7 +68,7 @@ class SegmentationDataset(Dataset[any]):
         mask = self.get_mask(idx)
         image , mask  = self.preprocess(image, mask)
     
-        return image.to(DEVICE) , mask.to(DEVICE)
+        return image, mask
     
     def get_image(self, idx:int):
         image_path = parent_dir+ self.df.iloc[idx, 4]
