@@ -2,8 +2,6 @@ import segmentation_models_pytorch as smp
 from segmentation_models_pytorch.losses import DiceLoss
 import torch.nn as nn
 
-ENCOUDER = 'resnet34'
-ENCODER_WEIGHTS = 'imagenet'
 
 class UNet(nn.Module):
     """
@@ -21,7 +19,7 @@ class UNet(nn.Module):
     Attributes:
         model (nn.Module): The U-Net model instance from the segmentation_models_pytorch library.
     """
-    def __init__(self, encoder_name=ENCOUDER, encoder_weights=ENCODER_WEIGHTS, classes=1, activation=None):
+    def __init__(self, encoder_name:str, encoder_weights:str, classes:int = 1, activation:str = None):
         
         """
         Initializes a new instance of UNet.
