@@ -7,6 +7,10 @@ The Massachusetts dataset consists of aerial images captured from various locati
 
 To use this codebase, you need to obtain the Massachusetts dataset separately. You can find the dataset and its corresponding annotations on this [link](https://www.cs.toronto.edu/~vmnih/data/). 
 
+### Sample Images
+
+![](https://github.com/MuhammedM294/AerialSeg/blob/c15bf5d6d8ee157a2ff4780643567658135187ef/data/data_samples/10828750_15.tif) ![](https://github.com/MuhammedM294/AerialSeg/blob/c15bf5d6d8ee157a2ff4780643567658135187ef/data/data_samples/10828750_15.tiff)
+
 ## Contributing
 
 Contributions to this project are welcome. If you find any issues or have suggestions for improvements, please open a new issue or submit a pull request.
