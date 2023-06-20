@@ -11,8 +11,8 @@ To use this codebase, you need to obtain the Massachusetts dataset separately. Y
 **Image**---**Mask**
 
 
-<img src="https://github.com/MuhammedM294/AerialSeg/assets/89984604/910bb0a0-576b-452a-a197-eb9c60317c4b" width="500" height="500"  /> 
-<img src="https://github.com/MuhammedM294/AerialSeg/assets/89984604/44ce6df7-48e4-4fe1-8c1f-0655ea5c60dc" width="500" height="500"  />
+<img src="https://github.com/MuhammedM294/AerialSeg/assets/89984604/910bb0a0-576b-452a-a197-eb9c60317c4b" width="350" height="350"  /> 
+<img src="https://github.com/MuhammedM294/AerialSeg/assets/89984604/44ce6df7-48e4-4fe1-8c1f-0655ea5c60dc" width="350" height="350"  />
 
 
 ## Contributing
