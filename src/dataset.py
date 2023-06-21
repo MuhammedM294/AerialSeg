@@ -21,6 +21,7 @@ class SegmentationDataset(Dataset[any]):
         train (bool): Specifies whether the dataset is for training (True) or testing (False).
         transform (torchvision.transforms.Normalize, optional): A transformation to be applied to the image. Defaults to None.
         augment (albumentations.Compose, optional): A composition of augmentations to be applied to both the image and mask. Defaults to None.
+        device (str, optional): The device to be used for training (e.g., 'cpu', 'cuda'). Defaults to 'cuda'.
 
     Attributes:
         train (bool): Indicates whether the dataset is for training or testing.
@@ -48,11 +49,12 @@ class SegmentationDataset(Dataset[any]):
         A PyTorch dataset object for the segmentation task.
     """
 
-    def __init__(self, df:pd.DataFrame, train:bool, transform:transforms.Normalize = None, augment:A.Compose = None):
+    def __init__(self, df:pd.DataFrame, train:bool, transform:transforms.Normalize = None, augment:A.Compose = None, device:str = 'cuda'):
      
         self.train = train
         self.transform = transform
         self.augment = augment
+        self.device = device
 
         if self.train:
             self.df = df[df['split'] == 'train']
@@ -67,7 +69,7 @@ class SegmentationDataset(Dataset[any]):
         mask = self.get_mask(idx)
         image , mask  = self.preprocess(image, mask)
     
-        return image, mask
+        return image.to(self.device), mask.to(self.device)
     
     def get_image(self, idx:int):
         image_path = self.df.iloc[idx, 2]
