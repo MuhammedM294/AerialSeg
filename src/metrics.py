@@ -37,7 +37,7 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     return iou.mean()
 
 
-def accuracy(output: torch.Tensor, target: torch.Tensor) -> float:
+def pixel_accuracy(output: torch.Tensor, target: torch.Tensor) -> float:
     """
     Computes the accuracy for multiple binary predictions.
 
