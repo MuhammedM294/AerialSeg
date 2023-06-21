@@ -110,8 +110,7 @@ def train_augmentation():
         augmented_image = augmentation['image']
         augmented_mask = augmentation['mask']
     """
-    return  A.Compose([
-        A.Resize(IMAGE_SIZE, IMAGE_SIZE),
+    return  A.Compose([ 
         A.HorizontalFlip(p=0.5),
         A.VerticalFlip(p=0.5),
         A.RandomRotate90(p=0.5),

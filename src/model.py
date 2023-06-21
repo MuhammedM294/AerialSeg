@@ -13,13 +13,14 @@ class UNet(nn.Module):
     Args:
         encoder_name (str): The name of the pre-trained encoder to use. 
         encoder_weights (str): The source of the pre-trained encoder weights. 
+        in_channels (int): The number of input channels. Defaults to 3.
         classes (int): The number of classes for the segmentation task. Defaults to 1.
         activation (str or callable): The activation function to use. Defaults to None.
 
     Attributes:
         model (nn.Module): The U-Net model instance from the segmentation_models_pytorch library.
     """
-    def __init__(self, encoder_name:str, encoder_weights:str, classes:int = 1, activation:str = None):
+    def __init__(self, encoder_name:str, encoder_weights:str,in_channels:int = 3, classes:int = 1, activation:str = None):
         
         """
         Initializes a new instance of UNet.
@@ -29,7 +30,7 @@ class UNet(nn.Module):
 
         self.model = smp.Unet( encoder_name=encoder_name,
                                encoder_weights=encoder_weights, 
-                               in_channels=3,
+                               in_channels=in_channels,
                                classes=classes,
                                activation=activation)
     

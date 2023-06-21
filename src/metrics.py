@@ -1,6 +1,6 @@
 import torch
 
-def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> float:
     """
     Calculates the Intersection over Union (IoU) metric for binary segmentation masks using PyTorch.
 
@@ -11,7 +11,7 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
             Shape: (BATCH_SIZE, 1, H, W), where BATCH_SIZE is the number of samples, H is the height of the mask, and W is the width of the mask.
 
     Returns:
-        torch.Tensor: Mean IoU score for the batch of samples.
+        float: The average IoU score for the batch of samples.
 
     The IoU (also known as Jaccard index) is a commonly used evaluation metric for image segmentation tasks.
     It measures the overlap between the predicted and ground truth masks, providing a measure of the segmentation accuracy.
@@ -27,8 +27,8 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
 
     """
     SMOOTH = 1e-6
-    outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    labels = labels.squeeze(1)
+    outputs = outputs.squeeze(1).long()  # BATCH x 1 x H x W => BATCH x H x W
+    labels = labels.squeeze(1).long()  # BATCH x 1 x H x W => BATCH x H x W
     intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
     union = (outputs | labels).float().sum((1, 2))         # Will be zero if both are 0
 
@@ -55,15 +55,14 @@ def pixel_accuracy(output: torch.Tensor, target: torch.Tensor) -> float:
     The number of correct predictions is counted, and the accuracy is calculated as the ratio of correct predictions to the total number of targets.
 
     Note:
-        - The function assumes that both the output and target tensors represent binary predictions or labels.
+        - The function assumes that both the outputs and labels tensors represent binary masks (with pixel values of 0 or 1).
         - The tensors can have any shape, as long as they have the same dimensions.
 
 
     """
     with torch.no_grad():
-        # Round predictions to 0 or 1
-        pred = torch.round(torch.sigmoid(output))
-        correct = pred.eq(target).sum().float()
-        accuracy = correct / len(target)
+        
+        correct = output.eq(target).sum().float()
+        accuracy = correct / len(target.flatten())
         return accuracy
 
