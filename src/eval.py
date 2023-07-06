@@ -1,37 +1,31 @@
-
 import torch
 from tqdm import tqdm
-from src.metrics import iou_pytorch, pixel_accuracy
+from src.metrics import Metrics
 
-
-def eval_fn(valid_dataloader, model):
+def eval_fn(valid_dataloader, model , metrics):
     """
-    Evaluates the model using the provided validation dataloader and model. 
+    Performs evaluation on the validation dataset using the provided model and metrics.
 
     Args:
-        valid_dataloader (torch.utils.data.DataLoader): Dataloader for validation data.
-        model (torch.nn.Module): The model to be evaluated.
-
+        valid_dataloader (torch.utils.data.DataLoader): The data loader for the validation dataset.
+        model: The model used for evaluation.
+        metrics: The metrics object used for tracking evaluation metrics.
 
     Returns:
-        float: The average validation loss per batch.
-        tensor: The average IoU per batch.
-        float: The average pixel accuracy per batch.
-
+        dict: A dictionary containing the metrics computed for each batch.
 
     """
+    print("Validating ...")
     model.eval()
-    valid_loss = 0
-    iou_sum = 0
-    valid_dataloader_len = len(valid_dataloader)
     for image, mask in tqdm(valid_dataloader):
         with torch.no_grad():
             logits, loss = model(image, mask)
-            valid_loss += loss.item()
             pred_mask = (torch.sigmoid(logits) > 0.5)*1
-            iou = iou_pytorch(pred_mask, mask)
-            iou_sum += iou
-            accuracy = pixel_accuracy(pred_mask, mask)
+            metrics.update( pred_mask, mask , loss.item() )
+            
+    
+    metrics_batches_values = metrics.get_batches_metrics()
+    print("Validation Done!")
+    metrics.save_epoch()
 
-
-    return valid_loss / valid_dataloader_len , iou_sum / valid_dataloader_len , accuracy
+    return metrics_batches_values 

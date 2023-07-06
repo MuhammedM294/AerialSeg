@@ -1,68 +1,188 @@
 import torch
+import numpy as np
+from collections import namedtuple
 
-def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> float:
-    """
-    Calculates the Intersection over Union (IoU) metric for binary segmentation masks using PyTorch.
-
-    Args:
-        outputs (torch.Tensor): Predicted segmentation masks.
-            Shape: (BATCH_SIZE, 1, H, W), where BATCH_SIZE is the number of samples, H is the height of the mask, and W is the width of the mask.
-        labels (torch.Tensor): Ground truth segmentation masks.
-            Shape: (BATCH_SIZE, 1, H, W), where BATCH_SIZE is the number of samples, H is the height of the mask, and W is the width of the mask.
-
-    Returns:
-        float: The average IoU score for the batch of samples.
-
-    The IoU (also known as Jaccard index) is a commonly used evaluation metric for image segmentation tasks.
-    It measures the overlap between the predicted and ground truth masks, providing a measure of the segmentation accuracy.
-
-    The function calculates the IoU score by first converting the outputs and labels tensors to 2D masks (BATCH_SIZE x H x W).
-    Then, it computes the intersection and union of the masks, taking into account only the foreground pixels (where the value is 1).
-    Finally, it applies smoothing to the division to avoid division by zero and returns the mean IoU score for the batch of samples.
-
-    Note:
-        - The function assumes that both the outputs and labels tensors represent binary masks (with pixel values of 0 or 1).
-        - The tensors should have the same shape and batch size.
-
-
-    """
-    SMOOTH = 1e-6
-    outputs = outputs.squeeze(1).long()  # BATCH x 1 x H x W => BATCH x H x W
-    labels = labels.squeeze(1).long()  # BATCH x 1 x H x W => BATCH x H x W
-    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
-    union = (outputs | labels).float().sum((1, 2))         # Will be zero if both are 0
-
-    iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our division to avoid 0/0
-
-    return iou.mean()
-
-
-def pixel_accuracy(output: torch.Tensor, target: torch.Tensor) -> float:
-    """
-    Computes the accuracy for multiple binary predictions.
+class Metrics(object):
+   """
+    Class for tracking and computing evaluation metrics during model training.
 
     Args:
-        output (torch.Tensor): Predicted values or logits.
-            Shape: (BATCH_SIZE, ...)
-        target (torch.Tensor): Ground truth labels or targets.
-            Shape: (BATCH_SIZE, ...)
+        output: The predicted output from the model.
+        target: The target ground truth values.
 
-    Returns:
-        float: Accuracy score.
-
-    The function computes the accuracy by comparing the predicted values or logits with the ground truth labels or targets.
-    It rounds the predictions to 0 or 1 by applying the sigmoid function, and then compares them with the targets.
-    The number of correct predictions is counted, and the accuracy is calculated as the ratio of correct predictions to the total number of targets.
-
-    Note:
-        - The function assumes that both the outputs and labels tensors represent binary masks (with pixel values of 0 or 1).
-        - The tensors can have any shape, as long as they have the same dimensions.
-
+    Attributes:
+        smooth (float): A small value added for numerical stability.
+        output: The predicted output from the model.
+        target: The target ground truth values.
+        CM: A named tuple representing the confusion matrix and evaluation metrics.
+        batches_loss (list): List to store the losses computed for each batch.
+        epochs_loss (list): List to store the average losses computed for each epoch.
+        batches_accuracy (list): List to store the accuracies computed for each batch.
+        epochs_accuracy (list): List to store the average accuracies computed for each epoch.
+        batches_precision (list): List to store the precisions computed for each batch.
+        epochs_precision (list): List to store the average precisions computed for each epoch.
+        batches_recall (list): List to store the recalls computed for each batch.
+        epochs_recall (list): List to store the average recalls computed for each epoch.
+        batches_f1_score (list): List to store the F1 scores computed for each batch.
+        epochs_f1_score (list): List to store the average F1 scores computed for each epoch.
+        batches_specificity (list): List to store the specificities computed for each batch.
+        epochs_specificity (list): List to store the average specificities computed for each epoch.
+        batches_iou (list): List to store the intersection over union (IoU) values computed for each batch.
+        epochs_iou (list): List to store the average IoU values computed for each epoch.
 
     """
-    with torch.no_grad():
+    
+   def __init__(self ,output = None, target = None):
+        self.smooth = 1e-6
+        self.output = output
+        self.target = target 
+        self.CM = None
+        self.batches_loss , self.epochs_loss = [] , []
+        self.batches_accurcy, self.epochs_accurcy = [] , []
+        self.batches_precision , self.epochs_precision = [] , []
+        self.batches_recall , self.epochs_recall= [] , []
+        self.batches_f1_score , self.epochs_f1_score = [] , []
+        self.batches_specificity, self.epochs_specificity= [] , []
+        self.batches_iou , self.epochs_iou = [] , []
+           
+
+   def update(self, output, target, loss):
+        """
+        Update the metrics using the predicted output, target, and loss.
+
+        Args:
+            output: The predicted output from the model.
+            target: The target ground truth values.
+            loss: The loss value for the current batch.
+
+        """
+
+        self.CM = self.confusion_matric(output, target)
+        self.save_batch(self.CM, loss)
+
+   
+
+   def confusion_matric(self, output, target):
+        """
+        Compute the confusion matrix and evaluation metrics.
+
+        Args:
+            output: The predicted output from the model.
+            target: The target ground truth values.
+
+        Returns:
+            CM: A named tuple representing the confusion matrix and evaluation metrics.
+
+        """
         
-        correct = output.eq(target).sum().float()
-        accuracy = correct / len(target.flatten())
-        return accuracy
+        assert output.shape == target.shape, \
+        "output and target must have the same shape"
+        assert output.shape[0] == target.shape[0], \
+            'number of targets and predicted outputs do not match'
+        
+        TP = torch.sum((output == 1) & (target == 1)).item()
+        TN = torch.sum((output == 0) & (target == 0)).item()
+        FP = torch.sum((output == 1) & (target == 0)).item()
+        FN = torch.sum((output == 0) & (target == 1)).item()
+        accuracy = (TP + TN + self.smooth) / (TP + TN + FP + FN + self.smooth)
+        precision = (TP + self.smooth) / (TP + FP + self.smooth)
+        recall = (TP + self.smooth) / (TP + FN + self.smooth)
+        f1_score = 2 * (precision * recall) / (precision + recall + self.smooth)
+        specificity = (TN + self.smooth) / (TN + FP + self.smooth)
+        iou = (TP + self.smooth) / (TP + FP + FN + self.smooth)
+        self.CM = namedtuple("CM", ["TP", "TN", "FP", "FN" ,\
+                                        "accuracy", "precision", "recall", "f1_score", \
+                                        "specificity", "iou"])
+        CM = self.CM(TP, TN, FP, FN , accuracy, precision, recall, f1_score, specificity, iou)
+
+        return CM 
+   
+  
+   def save_batch(self, CM , loss ):
+        """
+        Save the metrics computed for the current batch.
+
+        Args:
+            CM: A named tuple representing the confusion matrix and evaluation metrics.
+            loss: The loss value for the current batch.
+
+        """
+        self.batches_loss.append(loss)
+        self.batches_accurcy.append(CM.accuracy)
+        self.batches_precision.append(CM.precision)
+        self.batches_recall.append(CM.recall)
+        self.batches_f1_score.append(CM.f1_score)
+        self.batches_specificity.append(CM.specificity)
+        self.batches_iou.append(CM.iou)
+    
+   def save_epoch(self):
+        """
+        Save the average metrics computed for the current epoch.
+
+        """
+        self.epochs_loss.append(np.mean(self.batches_loss))
+        self.epochs_accurcy.append(np.mean(self.batches_accurcy))
+        self.epochs_precision.append(np.mean(self.batches_precision))
+        self.epochs_recall.append(np.mean(self.batches_recall))
+        self.epochs_f1_score.append(np.mean(self.batches_f1_score))
+        self.epochs_specificity.append(np.mean(self.batches_specificity))
+        self.epochs_iou.append(np.mean(self.batches_iou))
+
+        print("Epoch Metrics Saved!")
+        self.reset()
+   
+   def reset(self):
+        """
+        Reset the metric lists.
+
+        """
+        self.batches_loss  = []
+        self.batches_accurcy = []
+        self.batches_precision = []
+        self.batches_recall = []
+        self.batches_f1_score = []
+        self.batches_specificity = []
+        self.batches_iou = []
+     
+        print("Metrics Reseted!")
+
+   def get_batches_metrics(self):
+        """
+        Get the average metrics computed for each batch.
+
+        Returns:
+            metrics_batches_values: A dictionary containing the average metrics computed for each batch.
+
+        """
+        return {"loss": np.mean(self.batches_loss), \
+                "accuracy": np.mean(self.batches_accurcy), \
+                "precision": np.mean(self.batches_precision), \
+                "recall": np.mean(self.batches_recall), \
+                "f1_score": np.mean(self.batches_f1_score), \
+                "specificity": np.mean(self.batches_specificity), \
+                "iou": np.mean(self.batches_iou)}
+   
+
+   def get_epochs_metrics(self):
+        """
+        Get the average metrics computed for each epoch.
+
+        Returns:
+            metrics_epochs_values: A dictionary containing the average metrics computed for each epoch.
+
+        """
+        return {"loss": self.epochs_loss, \
+                "accuracy": self.epochs_accurcy, \
+                "precision": self.epochs_precision, \
+                "recall": self.epochs_recall, \
+                "f1_score": self.epochs_f1_score, \
+                "specificity": self.epochs_specificity, \
+                "iou": self.epochs_iou}
+
+
+       
+  
+       
+  
+       
 
